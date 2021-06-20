@@ -1,0 +1,73 @@
+<canvas id="canvas"></canvas>
+<canvas id="canvas1" width="1280" height="720"></canvas>
+<script src="https://cdn.jsdelivr.net/gh/phoboslab/jsmpeg@b5799bf/jsmpeg.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rtsp-relay@1.4.1/browser/index.js"></script>
+<script>
+  loadPlayer({
+    url: 'ws://' + location.host + '/api/stream',
+    canvas: document.getElementById('canvas'),
+  });
+</script>
+<!-- Import TensorFlow.js library -->
+<script
+  src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"
+  type="text/javascript"
+></script>
+
+<!-- Load the coco-ssd model to use to recognize things in images -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+<script>
+  var model = undefined;
+
+  cocoSsd.load().then(function (loadedModel) {
+    model = loadedModel;
+  });
+
+  window.onload = function () {
+    var c = document.getElementById('canvas');
+
+    setInterval(() => {
+      if (!model) return;
+
+      model.detect(c).then(function (predictions) {
+        // Lets write the predictions to a new paragraph element and
+        // add it to the DOM.
+        console.log('canvas', predictions);
+        var canvas = document.getElementById('canvas1');
+        canvas.style.position = 'absolute';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        var ctx = canvas.getContext('2d');
+
+        // clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (let n = 0; n < predictions.length; n++) {
+          // Description text
+          if (predictions[n].score > 0.66) {
+            // draw text
+            ctx.font = '30px Arial';
+            ctx.fillStyle = 'red';
+            ctx.fillText(
+              predictions[n].class + ", " + Math.round(parseFloat(predictions[n].score) * 100) + "%",
+              predictions[n].bbox[0],
+              predictions[n].bbox[1]
+            );
+
+            // draw bounding box
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.25)';
+            ctx.fillRect(
+              predictions[n].bbox[0],
+              predictions[n].bbox[1],
+              predictions[n].bbox[2],
+              predictions[n].bbox[3]
+            );
+
+            document.body.appendChild(canvas);
+          }
+         
+        }
+      });
+    }, 1000);
+  };
+</script>
